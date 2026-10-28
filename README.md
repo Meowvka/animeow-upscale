@@ -10,7 +10,7 @@
 
 Подробно и с цифрами — [docs/PIPELINE.md](docs/PIPELINE.md).
 Встраивание в animeow — [docs/INTEGRATION.md](docs/INTEGRATION.md).
-Обучение своей сети — [docs/TRAINING.md](docs/TRAINING.md).
+Обучение своей сети — [docs/TRAINING.md](docs/TRAINING.md), пошагово на арендованном GPU — [docs/RUNBOOK.md](docs/RUNBOOK.md).
 
 ## Что внутри
 

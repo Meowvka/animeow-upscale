@@ -7,6 +7,9 @@ cd training
 pip install -r requirements.txt
 ```
 
+Пошаговый сценарий «датасет на своём ПК → обучение на арендованном GPU по SSH» — [RUNBOOK.md](RUNBOOK.md)
+(скрипты `training/gpu/setup.sh` и `training/gpu/run.sh`).
+
 Обучение S/M идёт и на CPU (медленно), L — лучше на GPU. Бесплатного Google Colab (T4) хватает:
 M/L обучаются за 1–3 часа.
 

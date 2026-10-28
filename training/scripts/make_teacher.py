@@ -7,7 +7,7 @@
 повторять это в реальном времени (дистилляция).
 
     python scripts/make_teacher.py frames/*.png --out data/teacher
-    python scripts/make_teacher.py --video episode.mp4 --every 48 --out data/teacher
+    python scripts/make_teacher.py --video episode.mp4 --every 240 --skip-start 120 --skip-end 150 --out data/teacher
 
 Кадры из видео достаются ffmpeg-ом; на GPU-машине поставьте onnxruntime-gpu — будет в десятки раз быстрее.
 """
@@ -27,8 +27,15 @@ DEFAULT_MODEL = ROOT / "models" / "realesrgan" / "animevideov3-x4.fp32.onnx"
 
 
 def session(model: Path) -> ort.InferenceSession:
+    if hasattr(ort, "preload_dlls"):
+        ort.preload_dlls()  # onnxruntime-gpu[cuda,cudnn]: CUDA/cuDNN из pip-пакетов
     providers = [p for p in ("CUDAExecutionProvider", "CPUExecutionProvider") if p in ort.get_available_providers()]
-    return ort.InferenceSession(str(model), providers=providers)
+    sess = ort.InferenceSession(str(model), providers=providers)
+    used = sess.get_providers()
+    print(f"учитель: {used[0]}")
+    if used[0] == "CPUExecutionProvider":
+        print("  ВНИМАНИЕ: CUDA недоступна — учитель на CPU, ~10 с на кадр 720p (pip install 'onnxruntime-gpu[cuda,cudnn]')")
+    return sess
 
 
 def teacher(sess: ort.InferenceSession, img: np.ndarray, tile: int = 256, pad: int = 8) -> np.ndarray:
@@ -55,6 +62,8 @@ def main() -> None:
     ap.add_argument("frames", nargs="*", type=Path)
     ap.add_argument("--video", type=Path, action="append", default=[])
     ap.add_argument("--every", type=int, default=48, help="для --video: каждый N-й кадр")
+    ap.add_argument("--skip-start", type=float, default=0, help="для --video: пропустить первые N секунд (опенинг)")
+    ap.add_argument("--skip-end", type=float, default=0, help="для --video: пропустить последние N секунд (эндинг)")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     args = ap.parse_args()
@@ -66,7 +75,10 @@ def main() -> None:
     tmp = tempfile.TemporaryDirectory()
     for vi, video in enumerate(args.video):
         pattern = Path(tmp.name) / f"v{vi:03d}_%05d.png"
-        subprocess.run(["ffmpeg", "-v", "error", "-i", str(video), "-vf", f"select='not(mod(n\\,{args.every}))'",
+        dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(video)],
+                                   check=True, capture_output=True, text=True).stdout.strip())
+        cut = ["-ss", str(args.skip_start), "-to", str(max(args.skip_start + 1, dur - args.skip_end))]
+        subprocess.run(["ffmpeg", "-v", "error", *cut, "-i", str(video), "-vf", f"select='not(mod(n\\,{args.every}))'",
                         "-fps_mode", "passthrough", str(pattern)], check=True)
         frames += sorted(Path(tmp.name).glob(f"v{vi:03d}_*.png"))
     for i, f in enumerate(frames):

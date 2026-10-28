@@ -7,3 +7,7 @@ __pycache__
 training/data
 training/runs
 models/realesrgan/*.pth
+training/out
+training/results.tar
+training/run.log
+training/.venv

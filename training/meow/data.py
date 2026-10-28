@@ -27,7 +27,7 @@ def load_rgb(path: Path) -> np.ndarray:
 
 
 def to_tensor(a: np.ndarray) -> torch.Tensor:
-    return torch.from_numpy(np.ascontiguousarray(a)).permute(2, 0, 1).float().div_(255)
+    return torch.from_numpy(np.array(a, copy=True)).permute(2, 0, 1).float().div_(255)
 
 
 class PairDataset(Dataset):

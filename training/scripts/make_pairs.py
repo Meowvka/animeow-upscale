@@ -4,6 +4,7 @@
 как портят аниме стриминги (пересжатие H.264, мыло от апскейла 480→720, размытие).
 
     python scripts/make_pairs.py video1.mkv video2.mkv --out data/bd --height 720 --segments 20
+    python scripts/make_pairs.py ep*.mkv --out data/bd --skip-start 120 --skip-end 150   # без опенинга/эндинга
 
 Для каждого видео берётся N случайных отрезков по 4 с:
   1. чистый отрезок → lossless (ffv1) в нужной высоте (lanczos) — это hq;
@@ -66,6 +67,9 @@ def main() -> None:
     ap.add_argument("--segments", type=int, default=12, help="отрезков на видео")
     ap.add_argument("--seconds", type=float, default=4.0)
     ap.add_argument("--every", type=int, default=12, help="брать каждый N-й кадр отрезка")
+    ap.add_argument("--skip-start", type=float, default=0, help="не брать первые N секунд (опенинг)")
+    ap.add_argument("--skip-end", type=float, default=0, help="не брать последние N секунд (эндинг, превью)")
+    ap.add_argument("--prefix", default="", help="приставка к именам кадров — чтобы несколько запусков писали в одну папку")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
@@ -78,7 +82,9 @@ def main() -> None:
         for vi, video in enumerate(args.videos):
             dur = ffprobe_duration(video)
             for si in range(args.segments):
-                start = rng.uniform(0, max(0.0, dur - args.seconds - 1))
+                lo = min(args.skip_start, max(0.0, dur - args.seconds - 1))
+                hi = max(lo, dur - args.skip_end - args.seconds - 1)
+                start = rng.uniform(lo, hi)
                 clean = tmp / "clean.mkv"
                 lossy = tmp / "lossy.mp4"
                 run(["ffmpeg", "-y", "-ss", f"{start:.2f}", "-t", str(args.seconds), "-i", str(video), "-an", "-sn",
@@ -86,7 +92,7 @@ def main() -> None:
                 vf, crf, desc = degrade_filter(args.height, rng)
                 run(["ffmpeg", "-y", "-i", str(clean), "-vf", f"{vf},format=yuv420p", "-c:v", "libx264",
                      "-preset", rng.choice(["veryfast", "medium"]), "-crf", str(crf), str(lossy)])
-                prefix = f"v{vi:03d}s{si:03d}"
+                prefix = f"{args.prefix}v{vi:03d}s{si:03d}"
                 select = f"select='not(mod(n\\,{args.every}))'"
                 for src, sub in ((clean, "hq"), (lossy, "lq")):
                     run(["ffmpeg", "-y", "-i", str(src), "-vf", select, "-fps_mode", "passthrough",
@@ -97,7 +103,7 @@ def main() -> None:
                     raise SystemExit(f"{video} отрезок {si}: кадров {n_hq} vs {n_lq} — пары разъехались")
                 log.append({"video": str(video), "start": round(start, 2), "degrade": desc, "frames": n_hq})
                 print(f"{video.name} [{si + 1}/{args.segments}] {desc}: {n_hq} пар")
-    (args.out / "pairs.json").write_text(json.dumps(log, ensure_ascii=False, indent=1))
+    (args.out / f"pairs{args.prefix}.json").write_text(json.dumps(log, ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":
