@@ -1,0 +1,34 @@
+{
+  "name": "@animeow/meow-restore",
+  "version": "0.1.0",
+  "description": "MeowRestore runtime: anime frame restoration as Anime4K-compatible mpv hooks (WebGL2) and WebGPU pipelines",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean --target es2022",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "verify": "npm run build && node test/browser.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@webgpu/types": "^0.1.74",
+    "anime4k-webgpu": "^1.0.0",
+    "esbuild": "^0.28.2",
+    "tsup": "^9.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,6 @@
+models/realesrgan/*.onnx are converted from Real-ESRGAN "realesr-animevideov3" weights.
+Real-ESRGAN — BSD 3-Clause License, Copyright (c) 2021, Xintao Wang
+https://github.com/xinntao/Real-ESRGAN/blob/master/LICENSE
+
+MeowRestore follows the network layout and mpv hook format of Anime4K
+(MIT License, Copyright (c) 2019-2021 bloc97, https://github.com/bloc97/Anime4K).

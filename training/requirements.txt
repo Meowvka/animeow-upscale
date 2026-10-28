@@ -1,0 +1,7 @@
+# PyTorch ставьте под свою видеокарту: https://pytorch.org/get-started/locally/
+torch>=2.2
+numpy
+pillow
+onnx
+onnxruntime            # учитель Real-ESRGAN на CPU; на GPU-машине: onnxruntime-gpu
+onnxconverter-common

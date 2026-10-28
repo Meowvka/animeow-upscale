@@ -1,0 +1,9 @@
+node_modules
+dist
+.out
+__pycache__
+*.pyc
+.venv
+training/data
+training/runs
+models/realesrgan/*.pth
