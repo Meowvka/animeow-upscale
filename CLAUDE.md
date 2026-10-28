@@ -67,6 +67,8 @@ cd server && ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm i && npm run typecheck
 
 Не сделано:
 1. **Обучение на настоящих кадрах** — владелец арендует GPU, сценарий в `docs/RUNBOOK.md`.
+   Серии Kodik 720p качает `training/scripts/fetch_kodik.py` через API сайта (`/api/v1/stream/episode`)
+   вместе с разметкой опенинга/эндинга.
 2. **Встраивание в animeow** — по `docs/INTEGRATION.md`: хук вместо `RESTORE_CNN_S` в `anime4k-webgl.ts`,
    `MeowPreset` вместо `lib.ModeA/ModeAA` в `anime4k-enhance.ts`, шаг вниз L→M→S вместо выключения,
    `--net ESRGAN` в `media-enhance.ts`. Код из `web/src/` копируется в `app/lib/meow/`, а не ставится пакетом.

@@ -7,7 +7,8 @@
 # Ожидает (относительно training/):
 #   data/train/{hq,lq}   — пары из make_pairs.py (обязательно)
 #   data/val/{hq,lq}     — пары с ДРУГИХ тайтлов (желательно)
-#   data/kodik/*.mp4     — серии с Kodik для учителя Real-ESRGAN (необязательно)
+#   data/kodik/*.mp4     — серии с Kodik для учителя Real-ESRGAN (необязательно; fetch_kodik.py кладёт рядом
+#                          <имя>.skips.json — тогда опенинг/эндинг выкидываются по точной разметке Kodik)
 # Настройки — переменными окружения: STEPS_L=60000 STEPS_M=60000 STEPS_S=40000 CACHE=1 WORKERS=10
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -20,10 +21,10 @@ WORKERS=${WORKERS:-$(( $(nproc) > 2 ? $(nproc) - 2 : 1 ))}
 [ -d data/train/hq ] || { echo "нет data/train — сначала залейте датасет"; exit 1; }
 
 DATA="data/train"
-if compgen -G "data/kodik/*" >/dev/null; then
+if compgen -G "data/kodik/*.mp4" >/dev/null || compgen -G "data/kodik/*.mkv" >/dev/null; then
   if [ ! -d data/teacher/hq ]; then
     echo "== учитель Real-ESRGAN по сериям Kodik"
-    args=(); for v in data/kodik/*; do args+=(--video "$v"); done
+    args=(); for v in data/kodik/*.mp4 data/kodik/*.mkv; do [ -f "$v" ] && args+=(--video "$v"); done
     python scripts/make_teacher.py "${args[@]}" --every 240 --skip-start 120 --skip-end 150 --out data/teacher
   fi
   DATA="$DATA data/teacher"

@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import tempfile
 from pathlib import Path
@@ -75,10 +76,18 @@ def main() -> None:
     tmp = tempfile.TemporaryDirectory()
     for vi, video in enumerate(args.video):
         pattern = Path(tmp.name) / f"v{vi:03d}_%05d.png"
-        dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(video)],
-                                   check=True, capture_output=True, text=True).stdout.strip())
-        cut = ["-ss", str(args.skip_start), "-to", str(max(args.skip_start + 1, dur - args.skip_end))]
-        subprocess.run(["ffmpeg", "-v", "error", *cut, "-i", str(video), "-vf", f"select='not(mod(n\\,{args.every}))'",
+        skips_file = video.with_suffix(".skips.json")
+        skips = json.loads(skips_file.read_text()) if skips_file.exists() else []
+        select = f"not(mod(n\\,{args.every}))"
+        if skips:
+            # точные отрезки опенинга/эндинга от Kodik (fetch_kodik.py) вместо «первых/последних N секунд»
+            select += "".join(f"*not(between(t\\,{float(k['start'])}\\,{float(k['end'])}))" for k in skips)
+            cut = []
+        else:
+            dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(video)],
+                                       check=True, capture_output=True, text=True).stdout.strip())
+            cut = ["-ss", str(args.skip_start), "-to", str(max(args.skip_start + 1, dur - args.skip_end))]
+        subprocess.run(["ffmpeg", "-v", "error", *cut, "-i", str(video), "-vf", f"select='{select}'",
                         "-fps_mode", "passthrough", str(pattern)], check=True)
         frames += sorted(Path(tmp.name).glob(f"v{vi:03d}_*.png"))
     for i, f in enumerate(frames):
